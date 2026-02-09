@@ -195,24 +195,29 @@ async function goToYesThenVideo() {
   await sleep(1200);
 
   showScreen("video");
-  // couper définitivement la musique de fond
-try {
-  bgMusic.pause();
-  bgMusic.currentTime = 0;
-} catch (e) {}
 
-
-  let played = false;
+  // couper la musique de fond définitivement
   try {
-    finalVideo.volume = 1; // volume max (0 → 1)
-    await finalVideo.play();
-    played = true;
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
   } catch (e) {}
 
-  if (!played) {
-    videoFallback.classList.remove("is-hidden");
-  }
+  // sécurité mobile : forcer volume + play
+  try {
+    finalVideo.volume = 1;
+    finalVideo.muted = false;
+
+    const playPromise = finalVideo.play();
+
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // si le navigateur bloque, on laisse les controls faire le job
+        finalVideo.controls = true;
+      });
+    }
+  } catch (e) {}
 }
+
 
 function setupVideoErrorHandling() {
   finalVideo.addEventListener("error", () => {
