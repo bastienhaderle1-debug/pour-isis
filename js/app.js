@@ -10,7 +10,6 @@ const gateLine = document.getElementById("gateLine");
 const appRoot = document.getElementById("appRoot");
 let denyAudio = null;
 
-
 // NON -> page blanche + hamster triste
 function nukeToBlankPage() {
   // stop media
@@ -33,15 +32,15 @@ function nukeToBlankPage() {
   document.body.style.background = "#ffffff";
 
   // hamster triste
- const sadHamster = document.createElement("div");
-sadHamster.className = "sadHamster";
-sadHamster.textContent = "💔🐹";
-document.body.appendChild(sadHamster);
-const sadText = document.createElement("div");
-sadText.className = "sadHamsterText";
-sadText.textContent = "Accès refusé… ce secret est réservé à Isis.";
-document.body.appendChild(sadText);
+  const sadHamster = document.createElement("div");
+  sadHamster.className = "sadHamster";
+  sadHamster.textContent = "💔🐹";
+  document.body.appendChild(sadHamster);
 
+  const sadText = document.createElement("div");
+  sadText.className = "sadHamsterText";
+  sadText.textContent = "Accès refusé… ce secret est réservé à Isis.";
+  document.body.appendChild(sadText);
 }
 
 // OUI -> on laisse passer
@@ -161,7 +160,6 @@ async function tryPlayMusic() {
   } catch (e) {}
 }
 
-
 async function goToLetterFlow() {
   showScreen("letter");
 
@@ -190,6 +188,37 @@ async function goToLetterFlow() {
   applyScales();
 }
 
+/**
+ * IMPORTANT MOBILE:
+ * On "débloque" la lecture vidéo pendant le geste utilisateur (click).
+ * Technique: play très court en muted -> pause -> on remet le son.
+ * Ça permet ensuite un play() plus tard (même après un setTimeout), sur iOS/Android capricieux.
+ */
+async function unlockVideoPlayback() {
+  try {
+    finalVideo.load();
+
+    // tentative d'armement
+    finalVideo.muted = true;
+    finalVideo.playsInline = true;
+
+    const p = finalVideo.play();
+    if (p && typeof p.then === "function") {
+      await p;
+    }
+
+    // pause immédiate (on ne veut pas la lancer maintenant)
+    finalVideo.pause();
+    finalVideo.currentTime = 0;
+
+    // on remet le son pour la lecture finale
+    finalVideo.muted = false;
+    finalVideo.volume = 1;
+  } catch (e) {
+    // si ça échoue, on affichera le fallback plus tard
+  }
+}
+
 async function goToYesThenVideo() {
   showScreen("yes");
   await sleep(1200);
@@ -202,33 +231,51 @@ async function goToYesThenVideo() {
     bgMusic.currentTime = 0;
   } catch (e) {}
 
-  // sécurité mobile : forcer volume + play
+  // Tentative play (si mobile bloque, on laisse le fallback/controls)
   try {
     finalVideo.volume = 1;
     finalVideo.muted = false;
 
     const playPromise = finalVideo.play();
-
     if (playPromise !== undefined) {
       playPromise.catch(() => {
-        // si le navigateur bloque, on laisse les controls faire le job
+        videoFallback.classList.remove("is-hidden");
         finalVideo.controls = true;
       });
     }
-  } catch (e) {}
+  } catch (e) {
+    videoFallback.classList.remove("is-hidden");
+    finalVideo.controls = true;
+  }
 }
 
-
 function setupVideoErrorHandling() {
-  finalVideo.addEventListener("error", () => {
-    videoFallback.classList.remove("is-hidden");
+  const showFallback = () => {
+    try { videoFallback.classList.remove("is-hidden"); } catch (e) {}
+  };
+
+  finalVideo.addEventListener("error", showFallback);
+  finalVideo.addEventListener("stalled", showFallback);
+  finalVideo.addEventListener("waiting", () => {
+    // Si ça “charge” mais ne repart pas, on offre le bouton de lecture manuelle
+    showFallback();
+  });
+
+  // Si la vidéo se met en pause toute seule très tôt (cas mobile), on affiche le fallback
+  finalVideo.addEventListener("pause", () => {
+    // si pause alors que pas terminé, on propose un relancement manuel
+    if (!finalVideo.ended && finalVideo.currentTime > 0 && finalVideo.currentTime < 2) {
+      showFallback();
+    }
   });
 
   btnTryPlay?.addEventListener("click", async () => {
     try {
       await finalVideo.play();
       videoFallback.classList.add("is-hidden");
-    } catch (e) {}
+    } catch (e) {
+      showFallback();
+    }
   });
 }
 
@@ -243,10 +290,7 @@ async function loadContentFromSupabase() {
   supabaseStatus.textContent = "Supabase: connexion…";
 
   try {
-    const { data, error } = await client
-      .from("site_content")
-      .select("key,value");
-
+    const { data, error } = await client.from("site_content").select("key,value");
     if (error) throw error;
 
     const map = {};
@@ -278,19 +322,19 @@ btnGateNo.addEventListener("click", async () => {
   gateLine.textContent = "Dommage.";
   btnGateYes.disabled = true;
   btnGateNo.disabled = true;
+
   // musique si ce n'est pas Isis (lancée sur geste utilisateur => autorisée)
-try {
-denyAudio = new Audio("./assets/not-isis.mp3");
-denyAudio.loop = true;
-denyAudio.volume = 1;
+  try {
+    denyAudio = new Audio("./assets/not-isis.mp3");
+    denyAudio.loop = true;
+    denyAudio.volume = 1;
 
-// ⬇️ démarre à un passage précis (en secondes)
-const START_AT = 32; 
-denyAudio.currentTime = START_AT;
+    const START_AT = 32;
+    denyAudio.currentTime = START_AT;
 
-await denyAudio.play();
-} catch (e) {
-}
+    await denyAudio.play();
+  } catch (e) {}
+
   await sleep(700);
   nukeToBlankPage();
 });
@@ -318,6 +362,9 @@ btnYes.addEventListener("click", async () => {
   if (bgMusic.paused) {
     try { await bgMusic.play(); } catch (e) {}
   }
+
+  // ✅ Débloque la vidéo sur mobile pendant LE geste utilisateur
+  await unlockVideoPlayback();
 
   await goToYesThenVideo();
 });
