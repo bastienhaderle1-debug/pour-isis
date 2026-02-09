@@ -250,34 +250,13 @@ async function goToYesThenVideo() {
 }
 
 function setupVideoErrorHandling() {
-  const showFallback = () => {
-    try { videoFallback.classList.remove("is-hidden"); } catch (e) {}
-  };
-
-  finalVideo.addEventListener("error", showFallback);
-  finalVideo.addEventListener("stalled", showFallback);
-  finalVideo.addEventListener("waiting", () => {
-    // Si ça “charge” mais ne repart pas, on offre le bouton de lecture manuelle
-    showFallback();
-  });
-
-  // Si la vidéo se met en pause toute seule très tôt (cas mobile), on affiche le fallback
-  finalVideo.addEventListener("pause", () => {
-    // si pause alors que pas terminé, on propose un relancement manuel
-    if (!finalVideo.ended && finalVideo.currentTime > 0 && finalVideo.currentTime < 2) {
-      showFallback();
-    }
-  });
-
-  btnTryPlay?.addEventListener("click", async () => {
-    try {
-      await finalVideo.play();
-      videoFallback.classList.add("is-hidden");
-    } catch (e) {
-      showFallback();
-    }
+  // On ne montre RIEN à l’écran.
+  // Si la vidéo est bloquée, les contrôles natifs suffisent.
+  finalVideo.addEventListener("error", () => {
+    finalVideo.controls = true;
   });
 }
+
 
 // --- Supabase content loading ---
 async function loadContentFromSupabase() {
