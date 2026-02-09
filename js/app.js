@@ -56,6 +56,7 @@ const screens = {
   intro: document.getElementById("screenIntro"),
   letter: document.getElementById("screenLetter"),
   yes: document.getElementById("screenYes"),
+  celebrate: document.getElementById("screenCelebrate"), // ✅ nouveau
   video: document.getElementById("screenVideo"),
 };
 
@@ -77,6 +78,9 @@ const finalVideo = document.getElementById("finalVideo");
 const videoFallback = document.getElementById("videoFallback");
 const btnTryPlay = document.getElementById("btnTryPlay");
 const btnRestart = document.getElementById("btnRestart");
+
+// ✅ layer celebration
+const celebrateLayer = document.getElementById("celebrateLayer");
 
 // ---- Configuration gameplay ----
 const MAX_NO_CLICKS = 5;
@@ -192,13 +196,11 @@ async function goToLetterFlow() {
  * IMPORTANT MOBILE:
  * On "débloque" la lecture vidéo pendant le geste utilisateur (click).
  * Technique: play très court en muted -> pause -> on remet le son.
- * Ça permet ensuite un play() plus tard (même après un setTimeout), sur iOS/Android capricieux.
  */
 async function unlockVideoPlayback() {
   try {
     finalVideo.load();
 
-    // tentative d'armement
     finalVideo.muted = true;
     finalVideo.playsInline = true;
 
@@ -207,22 +209,79 @@ async function unlockVideoPlayback() {
       await p;
     }
 
-    // pause immédiate (on ne veut pas la lancer maintenant)
     finalVideo.pause();
     finalVideo.currentTime = 0;
 
-    // on remet le son pour la lecture finale
     finalVideo.muted = false;
     finalVideo.volume = 1;
   } catch (e) {
-    // si ça échoue, on affichera le fallback plus tard
+    // on gèrera via fallback
   }
 }
 
-async function goToYesThenVideo() {
+/* =========================
+   ✅ Celebration: pluie roses/paillettes
+   ========================= */
+function clearCelebrateLayer() {
+  if (!celebrateLayer) return;
+  celebrateLayer.innerHTML = "";
+}
+
+function spawnFallingItem() {
+  const el = document.createElement("div");
+  const isRose = Math.random() < 0.62; // + de roses
+  el.className = `fallItem ${isRose ? "fallItem--rose" : "fallItem--sparkle"}`;
+  el.textContent = isRose ? "🌹" : "✨";
+
+  // position
+  el.style.left = `${Math.random() * 100}%`;
+
+  // durée / rotation naturelle
+  const dur = 1.9 + Math.random() * 1.8; // 1.9s -> 3.7s
+  el.style.animationDuration = `${dur}s`;
+
+  // légère dérive horizontale via translateX
+  const drift = (Math.random() * 120 - 60).toFixed(0); // -60 -> +60
+  el.style.transform = `translateX(${drift}px) rotate(${Math.random() * 180}deg)`;
+
+  celebrateLayer.appendChild(el);
+
+  // cleanup
+  window.setTimeout(() => {
+    try { el.remove(); } catch (e) {}
+  }, (dur * 1000) + 200);
+}
+
+async function runCelebration(durationMs = 2600) {
+  clearCelebrateLayer();
+
+  const start = Date.now();
+  const interval = window.setInterval(() => {
+    // spawn un petit "burst" à chaque tick
+    for (let i = 0; i < 4; i++) spawnFallingItem();
+    if (Date.now() - start >= durationMs) {
+      window.clearInterval(interval);
+    }
+  }, 110);
+
+  // laisser vivre jusqu'à la fin
+  await sleep(durationMs + 250);
+  clearCelebrateLayer();
+}
+
+/* =========================
+   Flow YES -> Celebration -> Video
+   ========================= */
+async function goToYesThenCelebrateThenVideo() {
+  // YES screen
   showScreen("yes");
   await sleep(1200);
 
+  // ✅ Celebration screen
+  showScreen("celebrate");
+  await runCelebration(2600);
+
+  // Puis vidéo
   showScreen("video");
 
   // couper la musique de fond définitivement
@@ -231,7 +290,7 @@ async function goToYesThenVideo() {
     bgMusic.currentTime = 0;
   } catch (e) {}
 
-  // Tentative play (si mobile bloque, on laisse le fallback/controls)
+  // Tentative play
   try {
     finalVideo.volume = 1;
     finalVideo.muted = false;
@@ -239,26 +298,25 @@ async function goToYesThenVideo() {
     const playPromise = finalVideo.play();
     if (playPromise !== undefined) {
       playPromise.catch(() => {
-        videoFallback.classList.remove("is-hidden");
+        if (videoFallback) videoFallback.classList.remove("is-hidden");
         finalVideo.controls = true;
       });
     }
   } catch (e) {
-    videoFallback.classList.remove("is-hidden");
+    if (videoFallback) videoFallback.classList.remove("is-hidden");
     finalVideo.controls = true;
   }
 }
 
 function setupVideoErrorHandling() {
-  // On ne montre RIEN à l’écran.
-  // Si la vidéo est bloquée, les contrôles natifs suffisent.
   finalVideo.addEventListener("error", () => {
     finalVideo.controls = true;
   });
 }
 
-
-// --- Supabase content loading ---
+/* =========================
+   Supabase content loading
+   ========================= */
 async function loadContentFromSupabase() {
   const client = window.getSupabaseClient?.();
   if (!client) {
@@ -345,8 +403,22 @@ btnYes.addEventListener("click", async () => {
   // ✅ Débloque la vidéo sur mobile pendant LE geste utilisateur
   await unlockVideoPlayback();
 
-  await goToYesThenVideo();
+  // ✅ YES -> Celebration -> Video
+  await goToYesThenCelebrateThenVideo();
 });
+
+if (btnTryPlay) {
+  btnTryPlay.addEventListener("click", async () => {
+    try {
+      finalVideo.muted = false;
+      finalVideo.volume = 1;
+      await finalVideo.play();
+      if (videoFallback) videoFallback.classList.add("is-hidden");
+    } catch (e) {
+      finalVideo.controls = true;
+    }
+  });
+}
 
 btnRestart.addEventListener("click", async () => {
   try { finalVideo.pause(); finalVideo.currentTime = 0; } catch (e) {}
@@ -354,7 +426,8 @@ btnRestart.addEventListener("click", async () => {
   btnStart.disabled = false;
   btnStart.textContent = "▶ Start the music";
   questionBlock.classList.add("is-hidden");
-  videoFallback.classList.add("is-hidden");
+  if (videoFallback) videoFallback.classList.add("is-hidden");
+  clearCelebrateLayer();
   showScreen("intro");
 });
 

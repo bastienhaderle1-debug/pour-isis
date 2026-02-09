@@ -101,7 +101,18 @@
         </div>
       </section>
 
-      <!-- Écran 4: Vidéo finale -->
+      <!-- ✅ NOUVEL ÉCRAN 4: Roses + paillettes -->
+      <section id="screenCelebrate" class="screen">
+        <div class="card card-celebrate">
+          <h2 class="cursive celebrateTitle">Alors là… 🌹✨</h2>
+          <p class="hint">Une pluie d’amour juste pour toi…</p>
+
+          <!-- Ici on injecte les particules -->
+          <div id="celebrateLayer" class="celebrateLayer" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <!-- Écran 5: Vidéo finale -->
       <section id="screenVideo" class="screen">
         <div class="card card-video">
           <h2 class="cursive">In my head :</h2>
@@ -117,6 +128,13 @@
             >
               <source src="./assets/finale.mp4" type="video/mp4" />
             </video>
+
+            <!-- Fallback si play auto est bloqué -->
+            <div id="videoFallback" class="videoFallback is-hidden">
+              <p style="margin:0 0 10px;">Si la vidéo ne se lance pas toute seule, appuie ici :</p>
+              <button id="btnTryPlay" class="btn btn-primary">▶ Lancer la vidéo</button>
+            </div>
+          </div>
 
           <button id="btnRestart" class="btn btn-ghost">↺ Rejouer</button>
         </div>
