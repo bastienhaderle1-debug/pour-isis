@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Isis my love</title>
+
+    <link rel="stylesheet" href="./css/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <!-- Vérification d'identité (modal bloquante au chargement) -->
+    <div id="idGate" class="gate gate--active" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+      <div class="gate__card">
+        <div class="gate__art" aria-hidden="true">
+          <span class="gate__hamster">🐹</span>
+          <span class="gate__glass">🔎</span>
+        </div>
+
+        <h2 id="gateTitle" class="gate__title cursive">Vérification d'identité</h2>
+        <p class="gate__text">Êtes vous bien Isis ?</p>
+
+        <p id="gateLine" class="gate__line">Mon ami hamster vérifie ton identité.</p>
+
+        <div class="gate__actions">
+          <button id="btnGateYes" class="btn btn-primary gate__btn">Oui</button>
+          <button id="btnGateNo" class="btn btn-ghost gate__btn">Non</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fond + cœurs -->
+    <div class="bg">
+      <div class="hearts" aria-hidden="true">
+        <span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span>
+        <span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span>
+        <span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span>
+        <span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span>
+        <span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span>
+      </div>
+    </div>
+
+    <!-- Audio -->
+    <audio id="bgMusic" preload="auto" src="./assets/music.m4a"></audio>
+
+    <main id="appRoot" class="app">
+      <!-- Écran 1: Intro -->
+      <section id="screenIntro" class="screen is-active">
+        <div class="card">
+          <div class="brand">
+            <h1 class="title">Isis my love</h1>
+            <p class="subtitle">Pour <span class="highlight">Ma petite Isis</span></p>
+          </div>
+
+          <button id="btnStart" class="btn btn-primary">▶ Start the music</button>
+          <p class="hint">Clique pour lancer la musique, puis lis la lettre.</p>
+
+          <p id="supabaseStatus" class="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <!-- Écran 2: Lettre + Question -->
+      <section id="screenLetter" class="screen">
+        <div class="card card-letter">
+          <div class="letterHeader">
+            <h2 class="cursive">Ma petite Isis</h2>
+          </div>
+
+          <div class="letterBody">
+            <p class="typewriter" id="typeTarget" aria-live="polite"></p>
+
+            <div id="questionBlock" class="questionBlock is-hidden">
+              <p id="questionText" class="questionText">Will you be my valentine's partner ? ❤️</p>
+
+              <div id="playground" class="playground">
+                <button id="btnYes" class="btn btn-yes">Yes</button>
+                <button id="btnNo" class="btn btn-no">No</button>
+              </div>
+
+              <p id="microHint" class="microHint">Tu peux répondre non… mais attention 😈</p>
+            </div>
+          </div>
+
+          <div class="signature">
+            <p class="sign cursive">Ton amoureux Baba</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Écran 3: Message intermédiaire -->
+      <section id="screenYes" class="screen">
+        <div class="card">
+          <h2 id="yesIntermediate" class="bigYes">YEEEES ❤️</h2>
+          <p class="hint">Je savais que tu dirais oui 😼.</p>
+        </div>
+      </section>
+
+      <!-- Écran 4: Vidéo finale -->
+      <section id="screenVideo" class="screen">
+        <div class="card card-video">
+          <h2 class="cursive">In my head :</h2>
+
+          <div class="videoWrap">
+            <video
+              id="finalVideo"
+              class="video"
+              playsinline
+              controls
+              preload="metadata"
+              src="./assets/finale.mp4"
+            ></video>
+
+            <div id="videoFallback" class="videoFallback is-hidden">
+              <p>Ajoute ta vidéo dans <code>assets/finale.mp4</code> puis recharge la page.</p>
+              <button id="btnTryPlay" class="btn btn-primary">▶ Lancer la vidéo</button>
+            </div>
+          </div>
+
+          <button id="btnRestart" class="btn btn-ghost">↺ Rejouer</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Supabase JS (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Config + client + app -->
+    <script src="./js/config.js"></script>
+    <script src="./js/supabaseClient.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
