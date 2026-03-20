@@ -60,7 +60,7 @@ const screens = {
   video: document.getElementById("screenVideo"),
 };
 
-const supabaseStatus = document.getElementById("supabaseStatus");
+const contentStatus = document.getElementById("contentStatus");
 
 const btnStart = document.getElementById("btnStart");
 const bgMusic = document.getElementById("bgMusic");
@@ -89,7 +89,7 @@ let noClicks = 0;
 let yesScale = 1;
 let noScale = 1;
 
-// ---- Fallback local si Supabase pas configuré ----
+// ---- Contenu local ----
 const FALLBACK = {
   letter_text:
     "J’ai un truc à te demander…\n\n" +
@@ -315,37 +315,11 @@ function setupVideoErrorHandling() {
 }
 
 /* =========================
-   Supabase content loading
+   Local content loading
    ========================= */
-async function loadContentFromSupabase() {
-  const client = window.getSupabaseClient?.();
-  if (!client) {
-    supabaseStatus.textContent = "Supabase: non configuré (fallback local).";
-    return;
-  }
-
-  supabaseStatus.textContent = "Supabase: connexion…";
-
-  try {
-    const { data, error } = await client.from("site_content").select("key,value");
-    if (error) throw error;
-
-    const map = {};
-    for (const row of data || []) {
-      map[row.key] = row.value;
-    }
-
-    CONTENT = {
-      letter_text: map.letter_text ?? FALLBACK.letter_text,
-      question_text: map.question_text ?? FALLBACK.question_text,
-      yes_intermediate: map.yes_intermediate ?? FALLBACK.yes_intermediate,
-    };
-
-    supabaseStatus.textContent = "❤️❤️";
-  } catch (e) {
-    supabaseStatus.textContent = "Supabase: erreur (fallback local).";
-    CONTENT = { ...FALLBACK };
-  }
+function loadContent() {
+  CONTENT = { ...FALLBACK };
+  if (contentStatus) contentStatus.textContent = "❤️❤️";
 }
 
 /* =========================
@@ -434,5 +408,5 @@ btnRestart.addEventListener("click", async () => {
 window.addEventListener("load", async () => {
   setupVideoErrorHandling();
   showScreen("intro");
-  await loadContentFromSupabase();
+  loadContent();
 });
